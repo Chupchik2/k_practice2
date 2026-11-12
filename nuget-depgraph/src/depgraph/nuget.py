@@ -7,7 +7,7 @@
 import json
 import urllib.error
 import urllib.request
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as element_tree
 
 from depgraph.repository import RepositoryError
 
@@ -107,7 +107,7 @@ def select_group(groups, framework):
 def parse_nuspec(text, framework):
     """Разбирает .nuspec и возвращает зависимости для платформы."""
     try:
-        root = ET.fromstring(text)
+        root = element_tree.fromstring(text)
     except ET.ParseError as err:
         raise RepositoryError(f"некорректный .nuspec: {err}") from err
     unique = {}
