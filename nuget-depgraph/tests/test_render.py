@@ -1,6 +1,6 @@
 """Тесты генерации Mermaid и SVG."""
 import unittest
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as element_tree
 from pathlib import Path
 
 from depgraph.graph import DependencyGraph, build_graph
@@ -48,7 +48,7 @@ class SvgTest(unittest.TestCase):
 
     def parse(self, name):
         """Возвращает корень разобранного SVG для файла name."""
-        return ET.fromstring(render_svg(graph_of(name)))
+        return element_tree.fromstring(render_svg(graph_of(name)))
 
     def test_well_formed_counts(self):
         """SVG корректен; число прямоугольников и стрелок верное."""
@@ -63,13 +63,13 @@ class SvgTest(unittest.TestCase):
         for name in ("cycle.txt", "selfloop.txt"):
             with self.subTest(name=name):
                 root = self.parse(name)
-                self.assertIn("dasharray", ET.tostring(root).decode())
+                self.assertIn("dasharray", element_tree.tostring(root).decode())
 
     def test_single_node(self):
         """Граф из одной вершины."""
         source = TestRepository({"A": []})
         graph = build_graph(source, ("A", ""), 3)
-        root = ET.fromstring(render_svg(graph))
+        root = element_tree.fromstring(render_svg(graph))
         self.assertEqual(len(root.findall(f"{SVG_NS}rect")), 2)
 
 
