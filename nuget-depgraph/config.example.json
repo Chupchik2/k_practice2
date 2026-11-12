@@ -1,0 +1,8 @@
+{
+  "package_name": "Microsoft.Extensions.Logging",
+  "repository": "https://api.nuget.org/v3-flatcontainer/",
+  "test_mode": false,
+  "version": "8.0.0",
+  "output_file": "logging.svg",
+  "max_depth": 4
+}

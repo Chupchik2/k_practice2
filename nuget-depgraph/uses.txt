@@ -1,0 +1,134 @@
+
+
+$env:PYTHONPATH="src"
+python -m depgraph --config config.example.json
+
+--- 1.1 Microsoft.Extensions.Logging (configs\logging.json)
+{
+  "package_name": "Microsoft.Extensions.Logging",
+  "repository": "https://api.nuget.org/v3-flatcontainer/",
+  "test_mode": false,
+  "version": "8.0.0",
+  "output_file": "logging.svg",
+  "max_depth": 4
+}
+
+
+--- 1.2 Microsoft.Extensions.Hosting (configs\hosting.json)
+{
+  "package_name": "Microsoft.Extensions.Hosting",
+  "repository": "https://api.nuget.org/v3-flatcontainer/",
+  "test_mode": false,
+  "version": "8.0.0",
+  "output_file": "hosting.svg",
+  "max_depth": 2
+}
+
+
+--- 1.3 Serilog (configs\serilog.json)
+{
+  "package_name": "Serilog",
+  "repository": "https://api.nuget.org/v3-flatcontainer/",
+  "test_mode": false,
+  "version": "3.1.1",
+  "output_file": "serilog.svg",
+  "max_depth": 3
+}
+
+
+--- 1.4 Другая платформа (configs\logging_net8.json)
+Те же параметры, что в 1.1, плюс платформа и другое имя файла:
+{
+  "package_name": "Microsoft.Extensions.Logging",
+  "repository": "https://api.nuget.org/v3-flatcontainer/",
+  "test_mode": false,
+  "version": "8.0.0",
+  "output_file": "out/logging_net8.svg",
+  "max_depth": 4,
+  "framework": "net8.0"
+}
+
+
+--- 1.5 Глубина (configs\logging_d1.json)
+Те же параметры, что в 1.1, но "max_depth": 1 и "output_file": "out/logging_d1.svg".
+Показывает ограничение глубины: только прямые зависимости.
+
+
+
+--- 2.1 Ромб (configs\t_diamond.json)
+{
+  "package_name": "A",
+  "repository": "tests/data/diamond.txt",
+  "test_mode": true,
+  "version": "",
+  "output_file": "out/t_diamond.svg",
+  "max_depth": 5
+}
+
+
+--- 2.2 Цикл (configs\t_cycle.json)
+Тот же конфиг, но "repository": "tests/data/cycle.txt" и
+"output_file": "out/t_cycle.svg".
+
+
+--- 2.3 Самозависимость (configs\t_selfloop.json)
+"repository": "tests/data/selfloop.txt", "output_file": "out/t_selfloop.svg".
+Ожидаемо: циклы A -> A и A -> B -> A.
+
+--- 2.4 Цепочка + глубина (configs\t_chain.json)
+"repository": "tests/data/chain.txt", "output_file": "out/t_chain.svg".
+Запусти с "max_depth": 2, потом с 10. При глубине 2 в графе
+A, B, C; при 10 все пять: A, B, C, D, E.
+
+--- 2.4 Большой пример (configs\t_demo.json)
+"repository": "tests/data/demo_app.txt", "output_file": "out/t_demo.svg",
+"max_depth": 3.
+
+
+3. Обработка ошибок
+
+  "package_name": ""                   -> пустое имя
+  "package_name": "bad name!"          -> недопустимый id
+  "repository": "ftp://x"              -> нужен http(s) URL
+  "test_mode": "да"                    -> нужен true или false
+  "version": "1.x"                     -> некорректная версия
+  "output_file": "graph.png"           -> нужно расширение .svg
+  "output_file": "нет_папки/g.svg"     -> каталога не существует
+  "max_depth": 0                       -> должно быть >= 1
+  "max_depth": "3"                     -> нужно целое число
+  уберёшь любую строку                 -> "отсутствуют параметры"
+  лишний ключ "foo": 1                 -> "неизвестные параметры"
+  test_mode true и несуществующий файл -> файл не найден
+  test_mode true и имя "a"             -> имя из заглавных букв
+  несуществующий конфиг:
+    python -m depgraph --config configs\net_takogo.json
+  битый JSON (убери запятую или скобку)
+
+Ошибки репозитория (код завершения 1):
+  Реальный режим, несуществующий пакет или версия:
+    "package_name": "Net.Takogo.Paketa"  -> "не найдено: ..."
+  Тестовый режим, "repository": "tests/data/broken.txt"
+    -> "строка 2: нет символа ':'"
+  Тестовый режим, "repository": "tests/data/undefined.txt"
+    -> "пакет 'Z' не описан в репозитории"
+
+
+4.Сравнение с dotnet
+В отдельной папке (не в репозитории):
+
+  dotnet new classlib -n cmp
+  cd cmp
+  dotnet add package Microsoft.Extensions.Logging --version 8.0.0
+  dotnet list package --include-transitive
+  dotnet restore -v d        # подробный порядок загрузки
+
+Сравни список с графом из 1.1 и 1.4 (платформа net8.0 или netstandard2.0)
+и впиши найденные расхождения в README (раздел "Сравнение с реальным
+менеджером пакетов").
+
+Типичные причины расхождений:
+  - зависимости разные для разных платформ (framework);
+  - NuGet берёт одну версию пакета, у меня вершина = (имя, версия);
+  - dotnet грузит пакеты параллельно, порядок не фиксирован;
+  - пакеты, входящие в платформу, dotnet не скачивает.
+
